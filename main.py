@@ -2,13 +2,16 @@ import sys
 from qtdesigner.CM_Interface_UI import Ui_MainWindow
 from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtCore import QTime
-from ISSerial import getPorts
+# from ISSerial import getPorts
 from CrSpectrum import CrSpectrum
 from serial import Serial
+import serial.tools.list_ports
 from time import time, sleep
 import numpy as np
 from PIL import Image, ImageQt
 import os 
+
+from utils import *
 
 from matplotlib.backends.backend_qtagg import FigureCanvas
 from matplotlib.widgets import Button
@@ -168,7 +171,7 @@ class CameraInterfaceApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.terminalTextBrowser.verticalScrollBar().setValue(self.terminalTextBrowser.verticalScrollBar().maximum())
         
     def updateComPortsList(self):
-        ports = getPorts()
+        ports = [com for com, _, _ in sorted(serial.tools.list_ports.comports())]
         self.portSelectorComboBox.clear()
         self.portSelectorComboBox.addItems(ports)
     
@@ -244,7 +247,24 @@ class CameraInterfaceApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.status.showMessage("NDVI updated")
     
     def updateExtras(self):
+        image = Image.new("L", (300, 300))
+        pixels = self.camera.frame1.yPixels + self.camera.frame1.uvPixels
+        pixels[::2] = self.camera.frame1.yPixels
+        pixels[1::2] = self.camera.frame1.uvPixels
         
+        frame = [(pixels[i*2], pixels[i*2 + (3 if i%2==0 else 1)], pixels[i*2 + (1 if i%2==0 else -1)]) for i in range(len(pixels)//2)]
+        rgbImage = YUV2RGB(numpy.array(frame).reshape((300, 300, 3))/4)
+        image.putdata(rgbImage[:, :, 0].flatten())
+        self.frameExtra1Pixmap.setPixmap(QtGui.QPixmap(ImageQt.toqpixmap(image)))
+        
+        pixels = self.camera.frame2.yPixels + self.camera.frame2.uvPixels
+        pixels[::2] = self.camera.frame2.yPixels
+        pixels[1::2] = self.camera.frame2.uvPixels
+        
+        frame = [(pixels[i*2], pixels[i*2 + (3 if i%2==0 else 1)], pixels[i*2 + (1 if i%2==0 else -1)]) for i in range(len(pixels)//2)]
+        rgbImage = YUV2RGB(numpy.array(frame).reshape((300, 300, 3))/4)
+        image.putdata(rgbImage[:, :, 0].flatten())
+        self.frameExtra2Pixmap.setPixmap(QtGui.QPixmap(ImageQt.toqpixmap(image)))
         pass
     
     def takePicture(self):

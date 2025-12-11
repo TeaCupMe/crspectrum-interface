@@ -93,7 +93,7 @@ class CrSpectrum:
         # b = numpy.array(yPixels).reshape((300, 300))/1024
         image = [(pixels[i*2], pixels[i*2 + (3 if i%2==0 else 1)], pixels[i*2 + (1 if i%2==0 else -1)]) for i in range(len(pixels)//2)]
         yuvFrame = YUV2RGB(numpy.array(image).reshape((60,1, 3))/4)
-        if self.currentFilter == 1:
+        if self.currentFilter == 0:
             self.frame1.uvPixels[chunk*60:(chunk+1)*60] = pixels[1::2]
             self.frame1.yPixels[chunk*60:(chunk+1)*60] = pixels[::2]
         else:
